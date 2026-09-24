@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 
 from backend.app.api.health import router as health_router
+from backend.app.core.config import settings
+
 
 app = FastAPI(
-    title="DevNexa AI API",
+    title=settings.app_name,
     description="AI-powered agentic software engineering platform",
-    version="0.1.0",
+    version=settings.app_version,
 )
 
 
@@ -13,7 +15,8 @@ app = FastAPI(
 def root():
     return {
         "message": "DevNexa AI API is running",
-        "version": "0.1.0",
+        "version": settings.app_version,
+        "environment": settings.environment,
     }
 
 
