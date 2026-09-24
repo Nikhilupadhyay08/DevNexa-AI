@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from backend.app.api.health import router as health_router
+
 app = FastAPI(
     title="DevNexa AI API",
     description="AI-powered agentic software engineering platform",
@@ -15,10 +17,4 @@ def root():
     }
 
 
-@app.get("/health")
-def health():
-    return {
-        "status": "healthy",
-        "service": "devnexa-ai-backend",
-    }
-    
+app.include_router(health_router)
