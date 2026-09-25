@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from backend.app.api.health import router as health_router
+from backend.app.api.users import router as users_router
 from backend.app.core.config import settings
 
 
@@ -21,3 +22,4 @@ def root():
 
 
 app.include_router(health_router)
+app.include_router(users_router)
