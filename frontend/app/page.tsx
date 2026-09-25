@@ -2,7 +2,6 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] text-white">
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-6">
-        {/* Header */}
         <header className="flex items-center justify-between border-b border-white/10 pb-5">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white text-sm font-bold text-black">
@@ -13,6 +12,7 @@ export default function Home() {
               <h1 className="text-lg font-semibold tracking-tight">
                 DevNexa AI
               </h1>
+
               <p className="text-xs text-zinc-500">
                 AI-powered software engineering
               </p>
@@ -30,7 +30,6 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Hero */}
         <section className="flex flex-1 flex-col justify-center py-20">
           <div className="max-w-3xl">
             <p className="mb-4 text-sm font-medium text-zinc-500">
@@ -51,7 +50,6 @@ export default function Home() {
               propose changes, and validate solutions.
             </p>
 
-            {/* Repository Input */}
             <div className="mt-10 flex max-w-2xl flex-col gap-3 sm:flex-row">
               <input
                 type="text"
@@ -65,7 +63,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Capabilities */}
           <div className="mt-20 grid grid-cols-1 gap-4 md:grid-cols-3">
             <Feature
               number="01"
@@ -87,7 +84,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Footer */}
         <footer className="flex flex-col gap-2 border-t border-white/10 pt-5 text-xs text-zinc-600 sm:flex-row sm:items-center sm:justify-between">
           <span>DevNexa AI</span>
           <span>AI-powered developer infrastructure</span>
@@ -112,7 +108,9 @@ function Feature({
 
       <h3 className="mt-6 text-lg font-medium">{title}</h3>
 
-      <p className="mt-3 text-sm leading-6 text-zinc-500">{description}</p>
+      <p className="mt-3 text-sm leading-6 text-zinc-500">
+        {description}
+      </p>
     </div>
   );
 }
