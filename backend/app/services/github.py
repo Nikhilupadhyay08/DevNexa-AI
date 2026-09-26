@@ -1,3 +1,5 @@
+import base64
+
 import httpx
 
 
@@ -85,3 +87,52 @@ async def get_repository_tree(
         }
         for item in data.get("tree", [])
     ]
+
+
+async def get_file_content(
+    owner: str,
+    repository: str,
+    path: str,
+    branch: str,
+) -> str:
+    url = (
+        f"{GITHUB_API_URL}/repos/"
+        f"{owner}/{repository}/contents/{path}"
+    )
+
+    params = {
+        "ref": branch,
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            url,
+            headers=get_github_headers(),
+            params=params,
+            timeout=20.0,
+        )
+
+    if response.status_code == 404:
+        raise ValueError("GitHub file not found")
+
+    if response.status_code != 200:
+        raise ValueError(
+            f"GitHub API request failed with status {response.status_code}"
+        )
+
+    data = response.json()
+
+    if data.get("type") != "file":
+        raise ValueError("The requested path is not a file")
+
+    if data.get("encoding") != "base64":
+        raise ValueError("Unsupported GitHub file encoding")
+
+    try:
+        decoded_content = base64.b64decode(
+            data["content"]
+        ).decode("utf-8")
+    except (KeyError, ValueError, UnicodeDecodeError) as error:
+        raise ValueError("Unable to decode GitHub file content") from error
+
+    return decoded_content
