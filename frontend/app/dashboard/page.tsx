@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type User = {
   id: number;
@@ -8,9 +8,24 @@ type User = {
   username: string;
 };
 
+type Repository = {
+  name: string;
+  full_name: string;
+  owner: string;
+  description: string | null;
+  default_branch: string;
+  private: boolean;
+  html_url: string;
+  stars: number;
+  forks: number;
+};
+
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
+  const [repositoryUrl, setRepositoryUrl] = useState("");
+  const [repository, setRepository] = useState<Repository | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -50,6 +65,45 @@ export default function DashboardPage() {
     loadUser();
   }, []);
 
+  async function handleConnectRepository(
+    event: FormEvent<HTMLFormElement>,
+  ) {
+    event.preventDefault();
+
+    setConnecting(true);
+    setMessage("");
+    setRepository(null);
+
+    try {
+      const response = await fetch(
+        "http://127.0.0.1:8000/github/repository",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url: repositoryUrl,
+          }),
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data.detail || "Unable to connect repository.");
+        return;
+      }
+
+      setRepository(data);
+    } catch (error) {
+      console.error(error);
+      setMessage("Unable to connect to the backend.");
+    } finally {
+      setConnecting(false);
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem("access_token");
     window.location.href = "/login";
@@ -63,7 +117,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (message) {
+  if (message && !user) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-[#0a0a0a] px-6 text-white">
         <div className="text-center">
@@ -139,30 +193,100 @@ export default function DashboardPage() {
               </h3>
 
               <p className="mt-2 text-sm text-zinc-500">
-                Enter the URL of a GitHub repository to get started.
+                Enter the URL of a public GitHub repository to get started.
               </p>
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <form
+              onSubmit={handleConnectRepository}
+              className="mt-6 flex flex-col gap-3 sm:flex-row"
+            >
               <input
                 type="url"
+                value={repositoryUrl}
+                onChange={(event) =>
+                  setRepositoryUrl(event.target.value)
+                }
                 placeholder="https://github.com/username/repository"
+                required
                 className="h-12 flex-1 rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-white/30"
               />
 
               <button
-                disabled
-                className="h-12 rounded-lg bg-white px-6 text-sm font-medium text-black opacity-50"
+                type="submit"
+                disabled={connecting}
+                className="h-12 rounded-lg bg-white px-6 text-sm font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Connect
+                {connecting ? "Connecting..." : "Connect"}
               </button>
-            </div>
+            </form>
 
-            <p className="mt-4 text-xs text-zinc-600">
-              GitHub repository integration will be connected in the next
-              development stage.
-            </p>
+            {message && (
+              <p className="mt-4 text-sm text-red-400">
+                {message}
+              </p>
+            )}
           </div>
+
+          {repository && (
+            <div className="mt-6 max-w-3xl rounded-xl border border-white/10 bg-white/[0.02] p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs text-zinc-600">
+                    CONNECTED REPOSITORY
+                  </p>
+
+                  <h3 className="mt-2 text-xl font-medium">
+                    {repository.name}
+                  </h3>
+
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {repository.full_name}
+                  </p>
+                </div>
+
+                <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-400">
+                  Connected
+                </span>
+              </div>
+
+              <p className="mt-5 text-sm leading-6 text-zinc-400">
+                {repository.description ||
+                  "No repository description available."}
+              </p>
+
+              <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <RepositoryInfo
+                  label="Branch"
+                  value={repository.default_branch}
+                />
+
+                <RepositoryInfo
+                  label="Visibility"
+                  value={repository.private ? "Private" : "Public"}
+                />
+
+                <RepositoryInfo
+                  label="Stars"
+                  value={String(repository.stars)}
+                />
+
+                <RepositoryInfo
+                  label="Forks"
+                  value={String(repository.forks)}
+                />
+              </div>
+
+              <a
+                href={repository.html_url}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-6 inline-block text-sm text-zinc-300 underline underline-offset-4 transition hover:text-white"
+              >
+                Open repository on GitHub
+              </a>
+            </div>
+          )}
 
           <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
             <DashboardCard
@@ -183,6 +307,21 @@ export default function DashboardPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function RepositoryInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-lg border border-white/10 bg-white/[0.02] p-4">
+      <p className="text-xs text-zinc-600">{label}</p>
+      <p className="mt-2 text-sm text-zinc-300">{value}</p>
+    </div>
   );
 }
 
