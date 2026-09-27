@@ -1,3 +1,6 @@
+from backend.app.services.chunking import (
+    chunk_documents,
+)
 from backend.app.services.github import (
     get_file_content,
     get_repository,
@@ -8,7 +11,9 @@ from backend.app.services.github import (
 MAX_FILE_SIZE = 1_000_000
 
 
-async def ingest_repository(repository_url: str) -> list[dict]:
+async def ingest_repository(
+    repository_url: str,
+) -> list[dict]:
     """
     Retrieve source files from a GitHub repository
     and return their paths and contents.
@@ -22,7 +27,9 @@ async def ingest_repository(repository_url: str) -> list[dict]:
     parts = repository.split("/")
 
     if len(parts) < 2:
-        raise ValueError("Invalid GitHub repository URL")
+        raise ValueError(
+            "Invalid GitHub repository URL"
+        )
 
     owner = parts[-2]
     repository_name = parts[-1]
@@ -70,3 +77,20 @@ async def ingest_repository(repository_url: str) -> list[dict]:
         )
 
     return documents
+
+
+async def ingest_and_chunk_repository(
+    repository_url: str,
+) -> list[dict]:
+    """
+    Retrieve a GitHub repository, download its source files,
+    and split the files into chunks.
+    """
+
+    documents = await ingest_repository(
+        repository_url
+    )
+
+    chunks = chunk_documents(documents)
+
+    return chunks
