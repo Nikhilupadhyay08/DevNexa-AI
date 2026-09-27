@@ -2,6 +2,8 @@ import base64
 
 import httpx
 
+from backend.app.core.config import settings
+
 
 GITHUB_API_URL = "https://api.github.com"
 
@@ -10,6 +12,7 @@ def get_github_headers() -> dict:
     return {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
+        "Authorization": f"Bearer {settings.github_token}",
     }
 
 

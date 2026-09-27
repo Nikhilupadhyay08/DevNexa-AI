@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     jwt_expiration_minutes: int = 30
+    
+    github_token: str
 
     model_config = SettingsConfigDict(
         env_file="backend/.env",
