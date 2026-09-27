@@ -136,3 +136,56 @@ async def get_file_content(
         raise ValueError("Unable to decode GitHub file content") from error
 
     return decoded_content
+
+IGNORED_PATH_PARTS = {
+    "node_modules",
+    ".venv",
+    "venv",
+    ".git",
+    ".next",
+    "dist",
+    "build",
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+}
+
+
+IGNORED_FILE_NAMES = {
+    ".env",
+    ".env.local",
+    ".env.development",
+    ".env.production",
+}
+
+
+async def get_source_files(
+    owner: str,
+    repository: str,
+    branch: str,
+) -> list[dict]:
+    tree = await get_repository_tree(
+        owner,
+        repository,
+        branch,
+    )
+
+    source_files = []
+
+    for item in tree:
+        if item["type"] != "blob":
+            continue
+
+        path = item["path"]
+        path_parts = set(path.split("/"))
+        file_name = path_parts.pop() if path_parts else ""
+
+        if path_parts & IGNORED_PATH_PARTS:
+            continue
+
+        if file_name in IGNORED_FILE_NAMES:
+            continue
+
+        source_files.append(item)
+
+    return source_files
