@@ -156,6 +156,26 @@ IGNORED_FILE_NAMES = {
     ".env.local",
     ".env.development",
     ".env.production",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+}
+
+ALLOWED_FILE_EXTENSIONS = {
+    ".py",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".css",
+    ".scss",
+    ".html",
+    ".md",
+    ".json",
+    ".yaml",
+    ".yml",
+    ".toml",
+    ".txt",
 }
 
 
@@ -177,13 +197,21 @@ async def get_source_files(
             continue
 
         path = item["path"]
-        path_parts = set(path.split("/"))
-        file_name = path_parts.pop() if path_parts else ""
+        path_parts = path.split("/")
+        file_name = path_parts[-1]
 
-        if path_parts & IGNORED_PATH_PARTS:
+        if set(path_parts[:-1]) & IGNORED_PATH_PARTS:
             continue
 
         if file_name in IGNORED_FILE_NAMES:
+            continue
+
+        if "." not in file_name:
+            continue
+
+        extension = "." + file_name.rsplit(".", 1)[1].lower()
+
+        if extension not in ALLOWED_FILE_EXTENSIONS:
             continue
 
         source_files.append(item)
