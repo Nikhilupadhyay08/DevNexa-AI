@@ -1,3 +1,5 @@
+import re
+
 from app.services.github import get_file_content
 from app.services.qdrant import search_code
 
@@ -60,6 +62,8 @@ def find_references_tool(
             "Symbol cannot be empty"
         )
 
+    symbol = symbol.strip()
+
     results = search_code(
         query=symbol,
         limit=limit,
@@ -67,22 +71,92 @@ def find_references_tool(
 
     references = []
 
+    symbol_pattern = re.compile(
+        rf"\b{re.escape(symbol)}\b"
+    )
+
     for result in results:
         content = result.get(
             "content",
             "",
         )
 
-        if symbol in content:
-            references.append(
-                {
-                    "path": result.get("path"),
-                    "chunk_index": result.get(
-                        "chunk_index"
-                    ),
-                    "content": content,
-                    "score": result.get("score"),
-                }
+        if not content:
+            continue
+
+        matches = list(
+            symbol_pattern.finditer(content)
+        )
+
+        if not matches:
+            continue
+
+        reference_types = set()
+
+        for match in matches:
+            start = max(
+                0,
+                match.start() - 100,
             )
+            end = min(
+                len(content),
+                match.end() + 100,
+            )
+
+            surrounding_text = content[
+                start:end
+            ]
+
+            if re.search(
+                rf"\bdef\s+{re.escape(symbol)}\s*\(",
+                surrounding_text,
+            ):
+                reference_types.add(
+                    "definition"
+                )
+
+            elif re.search(
+                rf"\bclass\s+{re.escape(symbol)}\b",
+                surrounding_text,
+            ):
+                reference_types.add(
+                    "definition"
+                )
+
+            elif re.search(
+                rf"\b(?:from|import)\s+.*\b{re.escape(symbol)}\b",
+                surrounding_text,
+            ):
+                reference_types.add(
+                    "import"
+                )
+
+            elif re.search(
+                rf"\b{re.escape(symbol)}\s*\(",
+                surrounding_text,
+            ):
+                reference_types.add(
+                    "call"
+                )
+
+            else:
+                reference_types.add(
+                    "reference"
+                )
+
+        references.append(
+            {
+                "path": result.get("path"),
+                "chunk_index": result.get(
+                    "chunk_index"
+                ),
+                "content": content,
+                "score": result.get("score"),
+                "reference_types": sorted(
+                    reference_types
+                ),
+                "occurrence_count": len(matches),
+            }
+        )
 
     return references
