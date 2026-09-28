@@ -31,3 +31,7 @@ postgres_data/
 
 # Docker
 docker-data/
+
+# DevNexa Docker sandbox
+backend/sandbox/workspace/
+backend/sandbox/__pycache__/
