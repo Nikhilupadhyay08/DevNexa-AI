@@ -2,7 +2,7 @@ import base64
 
 import httpx
 
-from backend.app.core.config import settings
+from app.core.config import settings
 
 
 GITHUB_API_URL = "https://api.github.com"
@@ -139,6 +139,93 @@ async def get_file_content(
         raise ValueError("Unable to decode GitHub file content") from error
 
     return decoded_content
+
+async def get_git_history(
+    owner: str,
+    repository: str,
+    path: str | None = None,
+    branch: str | None = None,
+    limit: int = 10,
+) -> list[dict]:
+    if not owner.strip():
+        raise ValueError("GitHub owner cannot be empty")
+
+    if not repository.strip():
+        raise ValueError("GitHub repository cannot be empty")
+
+    if limit < 1:
+        raise ValueError("History limit must be at least 1")
+
+    if limit > 100:
+        raise ValueError("History limit cannot exceed 100")
+
+    url = (
+        f"{GITHUB_API_URL}/repos/"
+        f"{owner}/{repository}/commits"
+    )
+
+    params = {
+        "per_page": limit,
+    }
+
+    if path:
+        params["path"] = path
+
+    if branch:
+        params["sha"] = branch
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            url,
+            headers=get_github_headers(),
+            params=params,
+            timeout=20.0,
+        )
+
+    if response.status_code == 404:
+        raise ValueError(
+            "GitHub repository, branch, or file not found"
+        )
+
+    if response.status_code != 200:
+        raise ValueError(
+            f"GitHub API request failed with status "
+            f"{response.status_code}"
+        )
+
+    data = response.json()
+
+    history = []
+
+    for commit in data:
+        commit_data = commit.get(
+            "commit",
+            {}
+        )
+
+        author = commit_data.get(
+            "author"
+        ) or {}
+
+        history.append(
+            {
+                "sha": commit.get("sha"),
+                "message": commit_data.get(
+                    "message"
+                ),
+                "author": author.get(
+                    "name"
+                ),
+                "date": author.get(
+                    "date"
+                ),
+                "html_url": commit.get(
+                    "html_url"
+                ),
+            }
+        )
+
+    return history
 
 IGNORED_PATH_PARTS = {
     "node_modules",
